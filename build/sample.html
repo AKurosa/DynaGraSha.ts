@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Dynamic Gradient and Shadow</title>
+        <style>
+            html, body{height: 100%;}
+        </style>
+        <script src="./DynaGraSha.js"></script>
+    </head>
+    <body>
+        <div style="width: 600px; height: 800px;">
+            <svg width="100%" height="100%">
+                <circle id="dummyLight" cx="300" cy="60" r="40" fill="white"></circle>
+            </svg>
+        </div>
+        <script>
+            addDropShadowDynamic("dummyLight", "0px", "-10px", "5px", "black");
+        </script>
+    </body>
+</html>
