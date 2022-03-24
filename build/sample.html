@@ -7,24 +7,33 @@
             html, body{height: 100%;}
         </style>
         <script src="./DynaGraSha.js"></script>
+        <script src="./forSample.js"></script>
     </head>
     <body>
         <div style="width: 600px; height: 800px;">
             <svg width="100%" height="100%">
                 <circle id="targetCircle" cx="500" cy="300" r="30" fill="gray"></circle>
-                <rect id="targetRect" x="200" y="200" width="60" height="60" fill="none" stroke="gray" stroke-width="0.1"></rect>
+                <rect id="targetRect" x="100" y="300" width="60" height="60" fill="none" stroke="gray" stroke-width="0.1"></rect>
                 <circle id="dummyLight" cx="300" cy="60" r="40" fill="white"></circle>
             </svg>
         </div>
         <script>
             addDropShadowDynamic("dummyLight", "0px", "-10px", "5px", "black");
+            
+            // Get Focus point (function is at forSamle.js).
+            getFocus("dummyLight");
 
-            let stops = [
-                {offset: "0%", stop_color: "white"},
-                {offset: "100%", stop_color: "black"}
-            ];
-            addGradientRadialDynamic("targetCircle", "0.3", "30%", "100%", "30%", "30%", stops);
-            addGradientLinearDynamic("targetRect", "0%", "0%", "50%", "100%", stops);
+            // Add init shadow (function is at forSample.js).
+            addShadow(document.getElementById("targetCircle"));
+            addShadow(document.getElementById("targetRect"))
+
+            // Add drag event (function is at forSample.js).
+            addDragEvent("targetCircle");
+            addDragEvent("targetRect");
+
+            // Add init grad (function is at forSample.js).
+            addGrad(document.getElementById("targetCircle"));
+            addGrad(document.getElementById("targetRect"));
         </script>
     </body>
 </html>
