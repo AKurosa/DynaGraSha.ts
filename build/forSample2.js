@@ -104,63 +104,120 @@ let getDeltaT = function(elemA, elemB){
     }
 }
 
-let reOverlaped = function(elemA, elemB){
+let getTheta = function(elemA, elemB){
     let dx = elemB.cx - elemA.cx;
     let dy = elemB.cy - elemA.cy;
-    let dr = Math.sqrt(dx*dx + dy*dy);
-    let rate = dr / (2*ballR);
-    let drr = 2*ballR - dr;
-    let dx2 = (1 - rate)*dx;
-    let dy2 = (1 - rate)*dy;
-    //let dy2 = drr;
-
-    return [dx2, dy2];
+    return Math.atan2(dy, dx);
 }
 
 var addBallMove = function(){
     let date = new Date();
-    dt = (date.getSeconds() + date.getMilliseconds()/1000) - (dateOld.getSeconds() + dateOld.getMilliseconds()/1000);
-    dateOld = date;
+    const dt = (date.getSeconds() + date.getMilliseconds()/1000) - (dateOld.getSeconds() + dateOld.getMilliseconds()/1000);
+    
+    let stopflg = true;
+    
+    if(dt > 0.09){
+        dateOld = date;
 
-    for(let i=0; i<elementPool.length; i++){
-        let duy = elementPool[i].rho * dt;
-        
-        elementPool[i].uy += duy;
-        elementPool[i].cy += elementPool[i].uy*dt;
+        let elementMatrix = [];
 
-        for(let j=0; j<elementPool.length; j++){
-            if(i !== j){
-                if(isOverlaped(elementPool[i], elementPool[j])){
-                    let deltaT = getDeltaT(elementPool[i], elementPool[j]);
-                    elementPool[i].cx -= deltaT * elementPool[i].ux;
-                    elementPool[i].cy -= deltaT * elementPool[i].uy;
-                    elementPool[i].ux = 0;
-                    elementPool[i].uy = 0;
+        for(let i=0; i<elementPool.length; i++){
+            let duy = elementPool[i].rho * dt;
+            
+            elementPool[i].uy += duy;
+            elementPool[i].cy += elementPool[i].uy * dt;
 
+            elementPool[i].ux += elementPool[i].ax * dt;
+            elementPool[i].cx += elementPool[i].ux * dt;
 
-                    elementPool[i].cx -= deltaT * elementPool[j].ux;
-                    elementPool[i].cy -= deltaT * elementPool[j].uy;
-                    elementPool[j].ux = 0;
-                    elementPool[j].uy = 0;
+            elementPool[i].ax = 0;
+            elementPool[i].ay = 0;
 
+            let elemVector = [];
+            elemVector.push(elementPool[i]);
+
+            for(let j=i+1; j<elementPool.length; j++){
+                if(i !== j){
+                    if(isOverlaped(elementPool[i], elementPool[j])){
+                        elemVector.push(elementPool[j]);
+                    }
+                }
+            }
+
+            elementMatrix.push(elemVector);
+
+            if(elementPool[i].cy < limY[0] + ballR){
+                elementPool[i].cy = limY[0] + ballR;
+                if(elementPool[i].uy < 0){
+                    elementPool[i].uy *= -0.1;
+                }
+            }else if(elementPool[i].cy > limY[1] - ballR){
+                elementPool.cy = limY[1] - ballR;
+                if(elementPool[i].uy > 0){
+                    elementPool[i].uy *= -0.1;
+                }
+            }
+
+            if(elementPool[i].cx < limX[0] + ballR){
+                elementPool[i].cx = limX[0] + ballR;
+                if(elementPool[i].ux < 0){
+                    elementPool[i].ux *= -0.5;
+                }
+            }else if(elementPool[i].cx > limX[1] - ballR){
+                elementPool[i].cx = limX[1] - ballR;
+                if(elementPool[i].ux > 0){
+                    elementPool[i].ux *= -0.5;
                 }
             }
         }
-        
-        if(elementPool[i].cy < limY[0] + ballR){
-            elementPool[i].cy = limY[0] + ballR;
-            elementPool[i].uy = 0;
-        }
 
-        if(elementPool[i].cx < limX[0] + ballR){
-            elementPool[i].cx = limX[0] + ballR;
-        }else if(elementPool[i].cx > limX[1] - ballR){
-            elementPool[i].cx = limX[1] - ballR;
-        }
+        let targetVector = elementMatrix.filter(vec =>{
+            return vec.length > 1;
+        });
 
-        elementPool[i].element.setAttribute("cx", elementPool[i].cx);
-        elementPool[i].element.setAttribute("cy", elementPool[i].cy);
+        if(targetVector.length > 0){
+            targetVector.forEach(elems=>{
+                for(let i=1; i<elems.length; i++){
+                    let deltaT = getDeltaT(elems[0], elems[i]);
+                    if(deltaT > dt*10){
+                        deltaT = 0;
+                    }
+
+                    elems[i].cx -= deltaT * (elems[i].ux + elems[0].ux);
+                    elems[i].cy -= deltaT * (elems[i].uy + elems[0].uy);
+
+                    let theta = getTheta(elems[0], elems[i]);
+
+                    if(elems[i].uy < 0){
+                        elems[i].ay -= elems[i].rho * Math.cos(theta) * Math.sin(theta) + elems[i].uy*elems[i].uy/2;
+                    }else{
+                        elems[i].ay += elems[i].rho * Math.cos(theta) * Math.sin(theta) + elems[i].uy*elems[i].uy/2;
+                    }
+
+                    if(elems[0].cx < elems[i].cx){
+                        elems[i].ax -= elems[i].rho * Math.cos(theta) * Math.cos(theta) + elems[i].ux*elems[i].ux;
+                        elems[0].ax += elems[i].rho * Math.cos(theta) * Math.cos(theta) + elems[i].ux*elems[i].ux;
+                    }else{
+                        elems[i].ax += elems[i].rho * Math.cos(theta) * Math.cos(theta) + elems[i].ux*elems[i].ux;
+                        elems[0].ax -= elems[i].rho * Math.cos(theta) * Math.cos(theta) + elems[i].ux*elems[i].ux;
+                    }
+
+                    elems[i].ux = 0;
+                    elems[i].uy = 0;
+                }
+            });
+        }
     }
 
-    setTimeout(addBallMove, 100);
+    elementPool.forEach(elem=>{
+        elem.element.setAttribute("cx", elem.cx);
+        elem.element.setAttribute("cy", elem.cy);
+    });
+
+    console.log(elementPool[8]);
+    
+    if(stopflg){
+        setTimeout(addBallMove, 100);
+    }
+    
 }
